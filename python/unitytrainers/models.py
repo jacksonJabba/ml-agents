@@ -233,8 +233,16 @@ class LearningModel(object):
             hidden_value = hidden_streams[1]
 
         # We use the Beta distribution to select actions, as per: http://proceedings.mlr.press/v70/chou17a/chou17a.pdf
-        alpha = 1.0 + tf.layers.dense(hidden_policy, self.a_size, activation=tf.nn.softplus)
-        beta = 1.0 + tf.layers.dense(hidden_policy, self.a_size, activation=tf.nn.softplus)
+        # alpha = 1.0 + tf.layers.dense(hidden_policy, self.a_size, activation=tf.nn.softplus)
+        # beta = 1.0 + tf.layers.dense(hidden_policy, self.a_size, activation=tf.nn.softplus)
+
+        alpha_input = tf.layers.dense(hidden_policy, self.a_size, activation=None)
+        beta_input = tf.layers.dense(hidden_policy, self.a_size, activation=None)
+        alpha = 1.0 + 12 * tf.nn.sigmoid(alpha_input - 3.0)
+        beta = 1.0 + 12 * tf.nn.sigmoid(beta_input - 3.0)
+
+        # alpha = tf.clip_by_value(alpha, 1, 12)
+        # beta = tf.clip_by_value(beta, 1, 12)
 
         self.beta = tf.distributions.Beta(alpha, beta)
         
