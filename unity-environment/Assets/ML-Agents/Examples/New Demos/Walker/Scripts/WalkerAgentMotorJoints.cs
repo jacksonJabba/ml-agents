@@ -239,13 +239,15 @@ public class WalkerAgentMotorJoints : Agent
             leg_touching[index] = false;
         }
     }
+    
     public override void AgentAction(float[] vectorAction, string textAction)
     {
         float[] toUse = new float[vectorAction.Length];
         for (int k = 0; k < vectorAction.Length; k++)
         {
-            toUse[k] = ScaleContinuousAction(vectorAction[k], -1.5f, 1.5f);
+            toUse[k] = Mathf.Clamp(vectorAction[k], -3f, 3f);
         }
+        
         ForceMode forceModeToUse = ForceMode.Force;
 
         joints[thighLJoint].rb.AddTorque(thighLJoint.right * strength * toUse[0], forceModeToUse);
@@ -273,7 +275,7 @@ public class WalkerAgentMotorJoints : Agent
         
         AddReward(
             - 0.001f * torquePenalty
-            + 0.01f * Mathf.Clamp(bodyParts[hips].rb.velocity.x, 0f, 1000f)
+            + 0.02f * Mathf.Clamp(bodyParts[hips].rb.velocity.x, 0f, 1000f)
             + 0.01f * bodyParts[chest].rb.position.y
         );
     }

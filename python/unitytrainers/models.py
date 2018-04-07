@@ -206,7 +206,7 @@ class LearningModel(object):
         self.value = tf.identity(self.value, name="value_estimate")
         self.entropy = -tf.reduce_sum(self.all_probs * tf.log(self.all_probs + 1e-10), axis=1)
         self.action_holder = tf.placeholder(shape=[None], dtype=tf.int32)
-        self.selected_actions = c_layers.one_hot_encoding(self.action_holder, self.a_size)
+        self.selected_actions = tf.one_hot(self.action_holder, self.a_size)
 
         self.all_old_probs = tf.placeholder(shape=[None, self.a_size], dtype=tf.float32, name='old_probabilities')
 
@@ -232,30 +232,26 @@ class LearningModel(object):
             hidden_policy = hidden_streams[0]
             hidden_value = hidden_streams[1]
 
-        # We use the Beta distribution to select actions, as per: http://proceedings.mlr.press/v70/chou17a/chou17a.pdf
-        # alpha = 1.0 + tf.layers.dense(hidden_policy, self.a_size, activation=tf.nn.softplus)
-        # beta = 1.0 + tf.layers.dense(hidden_policy, self.a_size, activation=tf.nn.softplus)
+        self.mu = tf.layers.dense(hidden_policy, self.a_size, activation=None, use_bias=False,
+                                  kernel_initializer=c_layers.variance_scaling_initializer(factor=0.01))
 
-        alpha_input = tf.layers.dense(hidden_policy, self.a_size, activation=None)
-        beta_input = tf.layers.dense(hidden_policy, self.a_size, activation=None)
-        alpha = 1.0 + 12 * tf.nn.sigmoid(alpha_input - 3.0)
-        beta = 1.0 + 12 * tf.nn.sigmoid(beta_input - 3.0)
+        self.log_sigma_sq = tf.get_variable("log_sigma_squared", [self.a_size], dtype=tf.float32,
+                                            initializer=tf.zeros_initializer())
 
-        # alpha = tf.clip_by_value(alpha, 1, 12)
-        # beta = tf.clip_by_value(beta, 1, 12)
+        self.sigma_sq = tf.exp(self.log_sigma_sq)
+        self.epsilon = tf.random_normal(tf.shape(self.mu), dtype=tf.float32)
+        self.output = self.mu + tf.sqrt(self.sigma_sq) * self.epsilon
+        self.output = tf.identity(self.output, name='action')
+        a = tf.exp(-1 * tf.pow(tf.stop_gradient(self.output) - self.mu, 2) / (2 * self.sigma_sq))
+        b = 1 / tf.sqrt(2 * self.sigma_sq * np.pi)
+        self.all_probs = tf.multiply(a, b, name="action_probs")
+        self.entropy = tf.reduce_mean(0.5 * tf.log(2 * np.pi * np.e * self.sigma_sq))
 
-        self.beta = tf.distributions.Beta(alpha, beta)
-        
-        # This isn't technically entropy, but serves the same purpose here.
-        self.entropy = -tf.reduce_mean((alpha + beta) / 2, axis=1)
-
-        self.output = self.beta.sample()
-        self.output = tf.identity(self.output, name="action")
-        self.all_probs = self.beta.prob(self.output)
         self.all_probs = tf.identity(self.all_probs, name="action_probs")
 
         self.value = tf.layers.dense(hidden_value, 1, activation=None)
         self.value = tf.identity(self.value, name="value_estimate")
+
         self.all_old_probs = tf.placeholder(shape=[None, self.a_size], dtype=tf.float32,
                                             name='old_probabilities')
 

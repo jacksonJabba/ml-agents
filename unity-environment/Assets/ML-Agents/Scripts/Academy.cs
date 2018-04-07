@@ -285,6 +285,7 @@ public abstract class Academy : MonoBehaviour
         Time.timeScale = config.timeScale;
         Time.captureFramerate = 60;
         Application.targetFrameRate = config.targetFrameRate;
+        QualitySettings.vSyncCount = 0;
     }
 
     /// <summary>

@@ -1,12 +1,17 @@
 fileFormatVersion: 2
 guid: aa553a5255ce44577a198035d80c0443
-timeCreated: 1520582624
-licenseType: Free
 ModelImporter:
   serializedVersion: 22
   fileIDToRecycleName:
     100000: //RootNode
     400000: //RootNode
+    2100000: Coconut_Outside
+    2100002: Coconut_Inside
+    2100004: Umbrella
+    2100006: Straw
+    2300000: //RootNode
+    3300000: //RootNode
+    4300000: Coconut
   externalObjects: {}
   materials:
     importMaterials: 1
@@ -26,6 +31,7 @@ ModelImporter:
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
+    importConstraints: 0
     animationCompression: 1
     animationRotationError: 0.5
     animationPositionError: 0.5
