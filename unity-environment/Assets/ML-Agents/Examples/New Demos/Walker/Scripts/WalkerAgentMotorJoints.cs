@@ -190,15 +190,28 @@ public class WalkerAgentMotorJoints : Agent
     public void BodyPartObservation(BodyPart bp)
     {
         var rb = bp.rb;
-        AddVectorObs(rb.transform.localPosition);
+        Vector3 localPosrelToHips = hips.InverseTransformPoint(bp.rb.position); //chilren of the hips are affected by it's scale this is a workaround to get the local pos rel to the hips
+
+        // AddVectorObs(rb.transform.localPosition);
+        AddVectorObs(localPosrelToHips);
         AddVectorObs(rb.position.y);
         AddVectorObs(rb.velocity);
         AddVectorObs(rb.angularVelocity);
 
         if(bp.joint)
         {
-            var jointRotation = GetJointRotation(bp.joint);
-            AddVectorObs(jointRotation); //get the joint rotation
+                var jointRotation = GetJointRotation(bp.joint);
+            if(bp.joint == joints[shinRJoint].joint)
+            {
+                // float angle = Quaternion.Angle(joints[shinRJoint].joint.axis, joints[shinRJoint].joint.connectedBody.transform.rotation);
+                float angle = Quaternion.Angle(shinRJoint.localRotation, joints[shinRJoint].joint.connectedBody.transform.localRotation);
+                // float angle = Quaternion.Angle(joints[shinRJoint].rb.rotation, joints[shinRJoint].joint.connectedBody.rotation);
+                print("Quat Angle" + angle);
+
+                print("JointRotation: "  + jointRotation.eulerAngles);
+            }
+                AddVectorObs(jointRotation); //get the joint rotation
+
         }
     }
 
@@ -248,30 +261,32 @@ public class WalkerAgentMotorJoints : Agent
             toUse[k] = Mathf.Clamp(vectorAction[k], -3f, 3f);
         }
         
+        
         ForceMode forceModeToUse = ForceMode.Force;
+        joints[shinLJoint].rb.AddTorque(shinLJoint.right * strength * toUse[0], forceModeToUse);
 
-        joints[thighLJoint].rb.AddTorque(thighLJoint.right * strength * toUse[0], forceModeToUse);
-        joints[thighRJoint].rb.AddTorque(thighRJoint.right * strength * toUse[1], forceModeToUse);
-        joints[thighLJoint].rb.AddTorque(thighLJoint.forward * strength * toUse[2], forceModeToUse);
-        joints[thighRJoint].rb.AddTorque(thighRJoint.forward * strength * toUse[3], forceModeToUse);
-        joints[shinLJoint].rb.AddTorque(shinLJoint.right * strength * toUse[4], forceModeToUse);
-        joints[shinRJoint].rb.AddTorque(shinRJoint.right * strength * toUse[5], forceModeToUse);
-        joints[spineJoint].rb.AddTorque(chestJoint.right * strength * toUse[6], forceModeToUse);
-        joints[spineJoint].rb.AddTorque(chestJoint.forward * strength * toUse[7], forceModeToUse);
-        joints[chestJoint].rb.AddTorque(chestJoint.right * strength * toUse[8], forceModeToUse);
-        joints[chestJoint].rb.AddTorque(chestJoint.forward * strength * toUse[9], forceModeToUse);
-        joints[armLJoint].rb.AddTorque(armLJoint.forward * strength * toUse[10], forceModeToUse);
-        joints[armLJoint].rb.AddTorque(armLJoint.right * strength * toUse[11], forceModeToUse);
-        joints[armRJoint].rb.AddTorque(armRJoint.forward * strength * toUse[12], forceModeToUse);
-        joints[armRJoint].rb.AddTorque(armRJoint.right * strength * toUse[13], forceModeToUse);
-        joints[forearmRJoint].rb.AddTorque(forearmRJoint.right * strength * toUse[14], forceModeToUse);
-        joints[forearmLJoint].rb.AddTorque(forearmLJoint.right * strength * toUse[15], forceModeToUse);
+        // joints[thighLJoint].rb.AddTorque(thighLJoint.right * strength * toUse[0], forceModeToUse);
+        // joints[thighRJoint].rb.AddTorque(thighRJoint.right * strength * toUse[1], forceModeToUse);
+        // joints[thighLJoint].rb.AddTorque(thighLJoint.forward * strength * toUse[2], forceModeToUse);
+        // joints[thighRJoint].rb.AddTorque(thighRJoint.forward * strength * toUse[3], forceModeToUse);
+        // joints[shinLJoint].rb.AddTorque(shinLJoint.right * strength * toUse[4], forceModeToUse);
+        // joints[shinRJoint].rb.AddTorque(shinRJoint.right * strength * toUse[5], forceModeToUse);
+        // joints[spineJoint].rb.AddTorque(chestJoint.right * strength * toUse[6], forceModeToUse);
+        // joints[spineJoint].rb.AddTorque(chestJoint.forward * strength * toUse[7], forceModeToUse);
+        // joints[chestJoint].rb.AddTorque(chestJoint.right * strength * toUse[8], forceModeToUse);
+        // joints[chestJoint].rb.AddTorque(chestJoint.forward * strength * toUse[9], forceModeToUse);
+        // joints[armLJoint].rb.AddTorque(armLJoint.forward * strength * toUse[10], forceModeToUse);
+        // joints[armLJoint].rb.AddTorque(armLJoint.right * strength * toUse[11], forceModeToUse);
+        // joints[armRJoint].rb.AddTorque(armRJoint.forward * strength * toUse[12], forceModeToUse);
+        // joints[armRJoint].rb.AddTorque(armRJoint.right * strength * toUse[13], forceModeToUse);
+        // joints[forearmRJoint].rb.AddTorque(forearmRJoint.right * strength * toUse[14], forceModeToUse);
+        // joints[forearmLJoint].rb.AddTorque(forearmLJoint.right * strength * toUse[15], forceModeToUse);
 
         float torquePenalty = 0; 
-        for (int k = 0; k < 15; k++)
-        {
-            torquePenalty += toUse[k] * toUse[k];
-        }
+        // for (int k = 0; k < 15; k++)
+        // {
+        //     torquePenalty += toUse[k] * toUse[k];
+        // }
         
         AddReward(
             - 0.001f * torquePenalty
@@ -308,28 +323,13 @@ public class WalkerAgentMotorJoints : Agent
                         // var COMPosition = limbRBs[i].worldCenterOfMass + limbRBs[i].transform.TransformPoint(joints[i].anchor);
                         Gizmos.DrawSphere(COMPosition, drawCOMRadius);
 
-                        // Gizmos.color = Color.red;
-                        // // Gizmos.DrawSphere(bodyParts[hips].rb.worldCenterOfMass + (bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass), drawCOMRadius);
+                        Gizmos.color = Color.yellow;
+                        Vector3 localPosrelToHips = hips.InverseTransformPoint(item.Key.position); //chilren of the hips are affected by it's scale this is a workaround to get the local pos rel to the hips
+                        Gizmos.DrawSphere(localPosrelToHips, drawCOMRadius);
+                        Gizmos.color = Color.green;
+                        Vector3 worldPosrelToHipsPoint = hips.TransformPoint(localPosrelToHips);
+                        Gizmos.DrawSphere(worldPosrelToHipsPoint, drawCOMRadius);
                         // Gizmos.DrawSphere(item.Value.rb.worldCenterOfMass + (bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass), drawCOMRadius);
-                        // Gizmos.DrawSphere(item.Key.transform.TransformPoint(bodyParts[hips].rb.worldCenterOfMass), drawCOMRadius);
-                        // Gizmos.DrawSphere(item.Value.rb.position, drawCOMRadius);
-                        // Gizmos.DrawSphere(bodyParts[hips].rb.worldCenterOfMass, drawCOMRadius);
-
-
-                    }
-                }
-                foreach(var item in joints)
-                {
-                    if(item.Value.rb)
-                    {
-                        // Gizmos.color = new Color(0,1,1,.5f);
-                        Gizmos.color = Color.red;
-                        drawCOMRadius = item.Value.rb.mass/totalCharMass;
-                        // var COMPosition = limbRBs[i].worldCenterOfMass + limbRBs[i].transform.TransformPoint(limbRBs[i].transform.up + joints[i].anchor);
-                        // var COMPosition = limbRBs[i].transform.TransformPoint(joints[i].anchor);
-                        var COMPosition = item.Value.rb.worldCenterOfMass;
-                        // var COMPosition = limbRBs[i].worldCenterOfMass + limbRBs[i].transform.TransformPoint(joints[i].anchor);
-                        Gizmos.DrawSphere(COMPosition, drawCOMRadius);
 
                         // // Gizmos.DrawSphere(bodyParts[hips].rb.worldCenterOfMass + (bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass), drawCOMRadius);
                         // Gizmos.DrawSphere(item.Value.rb.worldCenterOfMass + (bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass), drawCOMRadius);
@@ -340,6 +340,28 @@ public class WalkerAgentMotorJoints : Agent
 
                     }
                 }
+                // foreach(var item in joints)
+                // {
+                //     if(item.Value.rb)
+                //     {
+                //         // Gizmos.color = new Color(0,1,1,.5f);
+                //         Gizmos.color = Color.red;
+                //         drawCOMRadius = item.Value.rb.mass/totalCharMass;
+                //         // var COMPosition = limbRBs[i].worldCenterOfMass + limbRBs[i].transform.TransformPoint(limbRBs[i].transform.up + joints[i].anchor);
+                //         // var COMPosition = limbRBs[i].transform.TransformPoint(joints[i].anchor);
+                //         var COMPosition = item.Value.rb.worldCenterOfMass;
+                //         // var COMPosition = limbRBs[i].worldCenterOfMass + limbRBs[i].transform.TransformPoint(joints[i].anchor);
+                //         Gizmos.DrawSphere(COMPosition, drawCOMRadius);
+
+                //         // // Gizmos.DrawSphere(bodyParts[hips].rb.worldCenterOfMass + (bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass), drawCOMRadius);
+                //         // Gizmos.DrawSphere(item.Value.rb.worldCenterOfMass + (bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass), drawCOMRadius);
+                //         // Gizmos.DrawSphere(item.Key.transform.TransformPoint(bodyParts[hips].rb.worldCenterOfMass), drawCOMRadius);
+                //         // Gizmos.DrawSphere(item.Value.rb.position, drawCOMRadius);
+                //         // Gizmos.DrawSphere(bodyParts[hips].rb.worldCenterOfMass, drawCOMRadius);
+
+
+                //     }
+                // }
                 
             }
 
@@ -360,7 +382,7 @@ public class WalkerAgentMotorJoints : Agent
                 child.gameObject.GetComponent<Rigidbody>().angularVelocity = default(Vector3);
             }
         }
-        gameObject.transform.rotation = Quaternion.Euler(new Vector3(0, 90f, 0));
+        // gameObject.transform.rotation = Quaternion.Euler(new Vector3(0, 90f, 0));
     }
 
     public override void AgentOnDone()

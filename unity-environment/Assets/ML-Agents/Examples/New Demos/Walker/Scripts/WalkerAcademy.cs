@@ -7,7 +7,7 @@ public class WalkerAcademy : Academy
     public override void InitializeAcademy()
     {
         Monitor.verticalOffset = 1f;
-        Physics.gravity *= 1.5f;
+        // Physics.gravity *= 1.5f;
     }
 
     public override void AcademyReset()

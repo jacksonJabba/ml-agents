@@ -4,4 +4,7 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_configObjects: {}
+  m_Scenes:
+  - enabled: 1
+    path: Assets/ML-Agents/Examples/New Demos/NewWalker/Scenes/ragdollbackup.unity
+    guid: c80d1a8172c062246a07041484fa3fb2
