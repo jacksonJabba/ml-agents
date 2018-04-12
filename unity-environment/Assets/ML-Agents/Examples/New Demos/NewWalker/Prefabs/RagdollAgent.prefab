@@ -4425,7 +4425,7 @@ MonoBehaviour:
     maxStep: 1000
     resetOnDone: 1
     onDemandDecision: 0
-    numberOfActionsBetweenDecisions: 2
+    numberOfActionsBetweenDecisions: 5
   ragdollPrefab: {fileID: 114727343419795378, guid: 4c7619af19ef8a2468b3f82b390be6da,
     type: 2}
   ragdoll: {fileID: 114037165434335952}

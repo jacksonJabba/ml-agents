@@ -40,8 +40,9 @@ public class WalkerAgent : Agent
     public Transform handR;
 
     public Dictionary<Transform, BodyPart> bodyParts = new Dictionary<Transform, BodyPart>();
-    public float agentEnergy = 100;
-    public float energyRegenerationRate;
+    public bool disableAgentActionsForDebug;
+    // public float agentEnergy = 100;
+    // public float energyRegenerationRate;
 
     [System.Serializable]
     public class BodyPart
@@ -114,10 +115,10 @@ public class WalkerAgent : Agent
                   item.Value.rb.maxAngularVelocity = 500;
                 // if(joints[i])
                 // limbRBs[i].centerOfMass += joints[i].anchor;
-                if(item.Value.joint)
-                {
-                    item.Value.rb.centerOfMass += Vector3.Scale(item.Value.joint.anchor, item.Value.rb.transform.localScale);
-                }
+                // if(item.Value.joint)
+                // {
+                //     item.Value.rb.centerOfMass += Vector3.Scale(item.Value.joint.anchor, item.Value.rb.transform.localScale);
+                // }
                 totalCharMass += item.Value.rb.mass;
             }
         }
@@ -140,56 +141,112 @@ public class WalkerAgent : Agent
         return(Quaternion.FromToRotation(joint.axis, joint.connectedBody.transform.rotation.eulerAngles));
     }
 
+    public void BodyPartObservation(BodyPart bp)
+        {
+            var rb = bp.rb;
+            Vector3 localPosRelToHips = hips.InverseTransformPoint(rb.position); //chilren of the hips are affected by it's scale this is a workaround to get the local pos rel to the hips
+            Vector3 velocityRelToHips = hips.InverseTransformVector(rb.velocity); //
+            Vector3 angVelocityRelToHips = hips.InverseTransformVector(rb.angularVelocity); 
+
+            // AddVectorObs(rb.transform.localPosition);
+            AddVectorObs(localPosRelToHips);
+            AddVectorObs(velocityRelToHips);
+            AddVectorObs(angVelocityRelToHips);
+            AddVectorObs(rb.position.y);
+            // AddVectorObs(rb.velocity);
+            // AddVectorObs(rb.angularVelocity);
+
+            if(bp.joint)
+            {
+                var jointRotation = GetJointRotation(bp.joint);
+                AddVectorObs(jointRotation); //get the joint rotation
+            }
+        }
     public override void CollectObservations()
     {
 
-        AddVectorObs(bodyParts[hips].rb.rotation.eulerAngles);
-        // AddVectorObs(bodyParts[hips].rb.velocity);
-        AddVectorObs(bodyParts[head].rb.position.y); //head height
-
+        AddVectorObs(bodyParts[hips].rb.rotation);
+        AddVectorObs(bodyParts[hips].rb.velocity);
+        AddVectorObs(bodyParts[hips].rb.angularVelocity);
         foreach(var item in bodyParts)
         {
-                var rb = item.Value.rb;
-                AddVectorObs(item.Key.localPosition);
-                AddVectorObs(item.Value.rb.position.y);
-                // AddVectorObs(bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass);
-                // AddVectorObs(hips.InverseTransformPoint(item.Value.rb.worldCenterOfMass));
-                // AddVectorObs(bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass);
-                                        // Gizmos.DrawSphere(item.Value.rb.worldCenterOfMass + (bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass), drawCOMRadius);
-                // AddVectorObs(item.Key.localRotation.eulerAngles);
-
-                AddVectorObs(rb.velocity);
-                AddVectorObs(rb.angularVelocity);
-
-
-            if(item.Key != hips)
-            {
-                // AddVectorObs(Quaternion.FromToRotation(hips.transform.forward, item.Key.forward).eulerAngles); //can't parent to hips because it skews model so have to do this instead of local rotation
-                var jointRotation = GetJointRotation(item.Value.joint);
-                AddVectorObs(jointRotation.eulerAngles); //get the joint rotation
-                // print(item.Key.name + " joint rotation: " + jointRotation);
-            }
-
-
-                // //let ml handle body part mass
-                // AddVectorObs(rb.mass);
-
-            // }
+            BodyPartObservation(item.Value);
         }
 
         for (int index = 0; index < 2; index++)
         {
-            if (leg_touching[index])
-            {
-                AddVectorObs(1);
-            }
-            else
-            {
-                AddVectorObs(0);
-            }
-            leg_touching[index] = false;
+            // if (leg_touching[index])
+            // {
+            //     AddVectorObs(1);
+            // }
+            // else
+            // {
+            //     AddVectorObs(0);
+            // }
+            // if (leg_touching[index])
+            // {
+            AddVectorObs(leg_touching[index]? 1: 0);
+            // }
+            // else
+            // {
+            //     AddVectorObs(0);
+            // }
+            // leg_touching[index] = false;
         }
     }
+
+
+
+    // public override void CollectObservations()
+    // {
+
+    //     AddVectorObs(bodyParts[hips].rb.rotation.eulerAngles);
+    //     // AddVectorObs(bodyParts[hips].rb.velocity);
+    //     AddVectorObs(bodyParts[head].rb.position.y); //head height
+
+    //     foreach(var item in bodyParts)
+    //     {
+    //             var rb = item.Value.rb;
+    //             AddVectorObs(item.Key.localPosition);
+    //             AddVectorObs(item.Value.rb.position.y);
+    //             // AddVectorObs(bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass);
+    //             // AddVectorObs(hips.InverseTransformPoint(item.Value.rb.worldCenterOfMass));
+    //             // AddVectorObs(bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass);
+    //                                     // Gizmos.DrawSphere(item.Value.rb.worldCenterOfMass + (bodyParts[hips].rb.worldCenterOfMass - item.Value.rb.worldCenterOfMass), drawCOMRadius);
+    //             // AddVectorObs(item.Key.localRotation.eulerAngles);
+
+    //             AddVectorObs(rb.velocity);
+    //             AddVectorObs(rb.angularVelocity);
+
+
+    //         if(item.Key != hips)
+    //         {
+    //             // AddVectorObs(Quaternion.FromToRotation(hips.transform.forward, item.Key.forward).eulerAngles); //can't parent to hips because it skews model so have to do this instead of local rotation
+    //             var jointRotation = GetJointRotation(item.Value.joint);
+    //             AddVectorObs(jointRotation.eulerAngles); //get the joint rotation
+    //             // print(item.Key.name + " joint rotation: " + jointRotation);
+    //         }
+
+
+    //             // //let ml handle body part mass
+    //             // AddVectorObs(rb.mass);
+
+    //         // }
+    //     }
+
+    //     for (int index = 0; index < 2; index++)
+    //     {
+    //         if (leg_touching[index])
+    //         {
+    //             AddVectorObs(1);
+    //         }
+    //         else
+    //         {
+    //             AddVectorObs(0);
+    //         }
+    //         leg_touching[index] = false;
+    //     }
+    // }
     // public override void CollectObservations()
     // {
     //     // AddVectorObs(body.transform.rotation);
@@ -237,117 +294,229 @@ public class WalkerAgent : Agent
     //     }
     // }
 
-    public override void AgentAction(float[] vectorAction, string textAction)
-    {
-        for (int k = 0; k < vectorAction.Length; k++)
-        {
-            vectorAction[k] = Mathf.Clamp(vectorAction[k], -1f, 1f);
-        }
-        // ForceMode forceModeToUse = ForceMode.VelocityChange;
-        ForceMode forceModeToUse = ForceMode.Acceleration;
-        // ForceMode forceModeToUse = ForceMode.Force;
+    // public void SetNormalizedTargetRotation(float x, float y, float z)
+    // {
+    //     //rigidbody.AddRelativeTorque(x * 15f, y * 15f, z * 15f, ForceMode.Acceleration);
+    //     //return;
+    //     //x = Mathf.InverseLerp(-1f,1f,x);
+    //     x = Mathf.Clamp(x, -1f, 1f);
+    //     y = Mathf.Clamp(y, -1f, 1f);
+    //     z = Mathf.Clamp(z, -1f, 1f);
+    //     y = (y + 1f) * 0.5f;
+    //     z = (z + 1f) * 0.5f;
 
-        bodyParts[thighL].rb.AddTorque(thighL.right * strength * vectorAction[0], forceModeToUse);
-        bodyParts[thighR].rb.AddTorque(thighR.right * strength * vectorAction[1], forceModeToUse);
-        bodyParts[thighL].rb.AddTorque(thighL.forward * strength * vectorAction[2], forceModeToUse);
-        bodyParts[thighR].rb.AddTorque(thighR.forward * strength * vectorAction[3], forceModeToUse);
-        bodyParts[shinL].rb.AddTorque(shinL.right * strength * vectorAction[4], forceModeToUse);
-        bodyParts[shinR].rb.AddTorque(shinR.right * strength * vectorAction[5], forceModeToUse);
-        // bodyParts[spine].rb.AddTorque(spine.up * strength * vectorAction[6], forceModeToUse);
-        // bodyParts[spine].rb.AddTorque(spine.forward * strength * vectorAction[7], forceModeToUse);
-        bodyParts[chest].rb.AddTorque(chest.up * strength * vectorAction[6], forceModeToUse);
-        bodyParts[chest].rb.AddTorque(chest.forward * strength * vectorAction[7], forceModeToUse);
-        // bodyParts[head].rb.AddTorque(head.up * strength * vectorAction[10], forceModeToUse);
-        // bodyParts[head].rb.AddTorque(head.forward * strength * vectorAction[11], forceModeToUse);
-        bodyParts[armL].rb.AddTorque(armL.forward * strength * vectorAction[8], forceModeToUse);
-        bodyParts[armL].rb.AddTorque(armL.right * strength * vectorAction[9], forceModeToUse);
-        bodyParts[armR].rb.AddTorque(armR.forward * strength * vectorAction[10], forceModeToUse);
-        bodyParts[armR].rb.AddTorque(armR.right * strength * vectorAction[11], forceModeToUse);
-        bodyParts[forearmR].rb.AddTorque(forearmR.right * strength * vectorAction[12], forceModeToUse);
-        bodyParts[forearmL].rb.AddTorque(forearmL.right * strength * vectorAction[13], forceModeToUse);
+    //     float xRot;
 
-        // bodyParts[thighL].rb.AddTorque(thighL.right * strength * vectorAction[0], forceModeToUse);
-        // bodyParts[thighR].rb.AddTorque(thighR.right * strength * vectorAction[1], forceModeToUse);
-        // bodyParts[thighL].rb.AddTorque(thighL.forward * strength * vectorAction[2], forceModeToUse);
-        // bodyParts[thighR].rb.AddTorque(thighR.forward * strength * vectorAction[3], forceModeToUse);
-        // bodyParts[shinL].rb.AddTorque(shinL.right * strength * vectorAction[4], forceModeToUse);
-        // bodyParts[shinR].rb.AddTorque(shinR.right * strength * vectorAction[5], forceModeToUse);
-        // // bodyParts[spine].rb.AddTorque(spine.up * strength * vectorAction[6], forceModeToUse);
-        // // bodyParts[spine].rb.AddTorque(spine.forward * strength * vectorAction[7], forceModeToUse);
-        // bodyParts[chest].rb.AddTorque(chest.up * strength * vectorAction[8], forceModeToUse);
-        // bodyParts[chest].rb.AddTorque(chest.forward * strength * vectorAction[9], forceModeToUse);
-        // // bodyParts[head].rb.AddTorque(head.up * strength * vectorAction[10], forceModeToUse);
-        // // bodyParts[head].rb.AddTorque(head.forward * strength * vectorAction[11], forceModeToUse);
-        // bodyParts[armL].rb.AddTorque(armL.forward * strength * vectorAction[12], forceModeToUse);
-        // bodyParts[armL].rb.AddTorque(armL.right * strength * vectorAction[13], forceModeToUse);
-        // bodyParts[armR].rb.AddTorque(armR.forward * strength * vectorAction[14], forceModeToUse);
-        // bodyParts[armR].rb.AddTorque(armR.right * strength * vectorAction[15], forceModeToUse);
-        // bodyParts[forearmR].rb.AddTorque(forearmR.right * strength * vectorAction[16], forceModeToUse);
-        // bodyParts[forearmL].rb.AddTorque(forearmL.right * strength * vectorAction[17], forceModeToUse);
-
-        // float torquePenalty = 0; 
-        // for (int k = 0; k < 17; k++)
-        // {
-        //     torquePenalty += vectorAction[k] * vectorAction[k];
-        // }
-        float torquePenalty = 0; 
-        for (int k = 0; k < 13; k++)
-        {
-            torquePenalty += vectorAction[k] * vectorAction[k];
-        }
-        float velocityPenalty = 0; 
-        foreach(var item in bodyParts)
-        {
+    //     if (x <= 0f)
+    //     {
+    //         x = x + 1f;
+    //         xRot = Mathf.Lerp(joint.lowAngularXLimit.limit, 0f, x);
+    //     }
+    //     else
+    //     {
             
-            if(item.Key != hips)
+    //         xRot = Mathf.Lerp(0f, joint.highAngularXLimit.limit, x);
+    //     }
+    //     float yRot = Mathf.Lerp( -joint.angularYLimit.limit, joint.angularYLimit.limit,y);
+    //     float zRot = Mathf.Lerp(-joint.angularZLimit.limit, joint.angularZLimit.limit, z);
+
+    //     joint.targetRotation = Quaternion.Euler(xRot, yRot, zRot);
+    // }
+    public void SetNormalizedTargetRotation(BodyPart bp, float x, float y, float z)
+    {
+
+        float xRot = 0;
+        float yRot = 0;
+        float zRot = 0;
+        if(x != 0)
+        {
+            x = Mathf.Clamp(x, -1f, 1f);
+            if (x <= 0f)
             {
-                velocityPenalty += item.Value.rb.velocity.sqrMagnitude;
+                x = x + 1f;
+                xRot = Mathf.Lerp(bp.joint.lowAngularXLimit.limit, 0f, x);
+            }
+            else
+            {
+                
+                xRot = Mathf.Lerp(0f, bp.joint.highAngularXLimit.limit, x);
             }
         }
 
+        if(y != 0)
+        {
+            y = Mathf.Clamp(y, -1f, 1f);
+            y = (y + 1f) * 0.5f;
+            yRot = Mathf.Lerp( -bp.joint.angularYLimit.limit, bp.joint.angularYLimit.limit,y);
+        }
+
+        if(z != 0)
+        {
+            z = Mathf.Clamp(z, -1f, 1f);
+            z = (z + 1f) * 0.5f;
+            zRot = Mathf.Lerp(-bp.joint.angularZLimit.limit, bp.joint.angularZLimit.limit, z);
+        }
 
 
+        bp.joint.targetRotation = Quaternion.Euler(xRot, yRot, zRot);
+    }
 
 
-
-        // //let ml handle body part mass
-        // int actIndex = 18;
-        // foreach(var item in bodyParts)
-        // {
-        //     item.Value.rb.mass = Mathf.Clamp(vectorAction[actIndex], 0.1f, 1f) * 20;
-        //     actIndex++;
+    public override void AgentAction(float[] vectorAction, string textAction)
+    {
+        if(!disableAgentActionsForDebug)
+        {
+            // continue;
         // }
 
 
+    //    SetNormalizedTargetRotation(bodyParts[chest], vectorAction[0], vectorAction[1], vectorAction[2]);
+    //    SetNormalizedTargetRotation(bodyParts[chest], vectorAction[0], 0, 0);
+    //    SetNormalizedTargetRotation(bodyParts[spine], vectorAction[1], 0, 0);
+       SetNormalizedTargetRotation(bodyParts[chest], vectorAction[0], vectorAction[1], 0);
+       SetNormalizedTargetRotation(bodyParts[spine], vectorAction[2], vectorAction[3], 0);
 
-        if (!IsDone())
-        {
-            // float headHeightReward = bodyParts[head].rb.position.y > 5? 1.0f * bodyParts[head].rb.position.y: 0;
-            float headHeightReward = bodyParts[head].rb.position.y/2;
-            float hipsHeightReward = bodyParts[hips].rb.position.y/2;
-            // SetReward(
-            AddReward(
-            - 0.05f * torquePenalty 
-            // - 0.01f * velocityPenalty
-            // + .5f * limbRBs[8].velocity.x
-            + .5f * bodyParts[hips].rb.velocity.x
-            // + 1.0f * bodyRB.velocity.x
-            // + 1.0f * bodyParts[head].rb.position.y //head height
-            + headHeightReward //head height
-            + hipsHeightReward //head height
-            // + 1f * bodyRB.position.y
-            - 0.05f * Mathf.Abs(hips.transform.position.z - hips.transform.parent.transform.position.z)
-            // - 0.05f * Mathf.Abs(bodyRB.velocity.y)
-            - 0.05f * Mathf.Abs(bodyParts[hips].rb.angularVelocity.sqrMagnitude)
-            );
-            
-        }
-        if (fell)
-        {
-            Done();
-            AddReward(-1f);
+       SetNormalizedTargetRotation(bodyParts[thighL], vectorAction[4], vectorAction[5], 0);
+       SetNormalizedTargetRotation(bodyParts[shinL], vectorAction[6], 0, 0);
+       SetNormalizedTargetRotation(bodyParts[footL], vectorAction[7], vectorAction[8], vectorAction[9]);
+       SetNormalizedTargetRotation(bodyParts[thighR], vectorAction[10], vectorAction[11], 0);
+       SetNormalizedTargetRotation(bodyParts[shinR], vectorAction[12], 0, 0);
+       SetNormalizedTargetRotation(bodyParts[footR], vectorAction[13], vectorAction[14], vectorAction[15]);
+       
+       SetNormalizedTargetRotation(bodyParts[armL], vectorAction[16], vectorAction[17], 0);
+       SetNormalizedTargetRotation(bodyParts[forearmL], vectorAction[18], 0, 0);
+    //    SetNormalizedTargetRotation(bodyParts[handL], vectorAction[0], 0, 0);
+       SetNormalizedTargetRotation(bodyParts[armR], vectorAction[19], vectorAction[20], 0);
+       SetNormalizedTargetRotation(bodyParts[forearmR], vectorAction[21], 0, 0);
+    //    SetNormalizedTargetRotation(bodyParts[handR], vectorAction[0], 0, 0);
+
+        AddReward(bodyParts[footR].rb.position.y * .01f);
+        AddReward(bodyParts[footR].rb.velocity.sqrMagnitude * -.001f);
+            // SetReward((ragdoll.head.Height - 1.2f) + ragdoll.head.transform.up.y * 0.1f);
+
+            // if (ragdoll.upperChest.touchingGround || ragdoll.lowerChest.touchingGround || ragdoll.head.touchingGround || ragdoll.head.Height < 1.2f)
+            // {
+            //     SetReward(-1f);
+            //     if (Application.isEditor)
+            //         print(GetCumulativeReward());
+            //     Done();
         }
     }
+
+
+
+    
+    // public override void AgentAction(float[] vectorAction, string textAction)
+    // {
+    //     for (int k = 0; k < vectorAction.Length; k++)
+    //     {
+    //         vectorAction[k] = Mathf.Clamp(vectorAction[k], -1f, 1f);
+    //     }
+    //     // ForceMode forceModeToUse = ForceMode.VelocityChange;
+    //     ForceMode forceModeToUse = ForceMode.Acceleration;
+    //     // ForceMode forceModeToUse = ForceMode.Force;
+
+    //     bodyParts[thighL].rb.AddTorque(thighL.right * strength * vectorAction[0], forceModeToUse);
+    //     bodyParts[thighR].rb.AddTorque(thighR.right * strength * vectorAction[1], forceModeToUse);
+    //     bodyParts[thighL].rb.AddTorque(thighL.forward * strength * vectorAction[2], forceModeToUse);
+    //     bodyParts[thighR].rb.AddTorque(thighR.forward * strength * vectorAction[3], forceModeToUse);
+    //     bodyParts[shinL].rb.AddTorque(shinL.right * strength * vectorAction[4], forceModeToUse);
+    //     bodyParts[shinR].rb.AddTorque(shinR.right * strength * vectorAction[5], forceModeToUse);
+    //     // bodyParts[spine].rb.AddTorque(spine.up * strength * vectorAction[6], forceModeToUse);
+    //     // bodyParts[spine].rb.AddTorque(spine.forward * strength * vectorAction[7], forceModeToUse);
+    //     bodyParts[chest].rb.AddTorque(chest.up * strength * vectorAction[6], forceModeToUse);
+    //     bodyParts[chest].rb.AddTorque(chest.forward * strength * vectorAction[7], forceModeToUse);
+    //     // bodyParts[head].rb.AddTorque(head.up * strength * vectorAction[10], forceModeToUse);
+    //     // bodyParts[head].rb.AddTorque(head.forward * strength * vectorAction[11], forceModeToUse);
+    //     bodyParts[armL].rb.AddTorque(armL.forward * strength * vectorAction[8], forceModeToUse);
+    //     bodyParts[armL].rb.AddTorque(armL.right * strength * vectorAction[9], forceModeToUse);
+    //     bodyParts[armR].rb.AddTorque(armR.forward * strength * vectorAction[10], forceModeToUse);
+    //     bodyParts[armR].rb.AddTorque(armR.right * strength * vectorAction[11], forceModeToUse);
+    //     bodyParts[forearmR].rb.AddTorque(forearmR.right * strength * vectorAction[12], forceModeToUse);
+    //     bodyParts[forearmL].rb.AddTorque(forearmL.right * strength * vectorAction[13], forceModeToUse);
+
+    //     // bodyParts[thighL].rb.AddTorque(thighL.right * strength * vectorAction[0], forceModeToUse);
+    //     // bodyParts[thighR].rb.AddTorque(thighR.right * strength * vectorAction[1], forceModeToUse);
+    //     // bodyParts[thighL].rb.AddTorque(thighL.forward * strength * vectorAction[2], forceModeToUse);
+    //     // bodyParts[thighR].rb.AddTorque(thighR.forward * strength * vectorAction[3], forceModeToUse);
+    //     // bodyParts[shinL].rb.AddTorque(shinL.right * strength * vectorAction[4], forceModeToUse);
+    //     // bodyParts[shinR].rb.AddTorque(shinR.right * strength * vectorAction[5], forceModeToUse);
+    //     // // bodyParts[spine].rb.AddTorque(spine.up * strength * vectorAction[6], forceModeToUse);
+    //     // // bodyParts[spine].rb.AddTorque(spine.forward * strength * vectorAction[7], forceModeToUse);
+    //     // bodyParts[chest].rb.AddTorque(chest.up * strength * vectorAction[8], forceModeToUse);
+    //     // bodyParts[chest].rb.AddTorque(chest.forward * strength * vectorAction[9], forceModeToUse);
+    //     // // bodyParts[head].rb.AddTorque(head.up * strength * vectorAction[10], forceModeToUse);
+    //     // // bodyParts[head].rb.AddTorque(head.forward * strength * vectorAction[11], forceModeToUse);
+    //     // bodyParts[armL].rb.AddTorque(armL.forward * strength * vectorAction[12], forceModeToUse);
+    //     // bodyParts[armL].rb.AddTorque(armL.right * strength * vectorAction[13], forceModeToUse);
+    //     // bodyParts[armR].rb.AddTorque(armR.forward * strength * vectorAction[14], forceModeToUse);
+    //     // bodyParts[armR].rb.AddTorque(armR.right * strength * vectorAction[15], forceModeToUse);
+    //     // bodyParts[forearmR].rb.AddTorque(forearmR.right * strength * vectorAction[16], forceModeToUse);
+    //     // bodyParts[forearmL].rb.AddTorque(forearmL.right * strength * vectorAction[17], forceModeToUse);
+
+    //     // float torquePenalty = 0; 
+    //     // for (int k = 0; k < 17; k++)
+    //     // {
+    //     //     torquePenalty += vectorAction[k] * vectorAction[k];
+    //     // }
+    //     float torquePenalty = 0; 
+    //     for (int k = 0; k < 13; k++)
+    //     {
+    //         torquePenalty += vectorAction[k] * vectorAction[k];
+    //     }
+    //     float velocityPenalty = 0; 
+    //     foreach(var item in bodyParts)
+    //     {
+            
+    //         if(item.Key != hips)
+    //         {
+    //             velocityPenalty += item.Value.rb.velocity.sqrMagnitude;
+    //         }
+    //     }
+
+
+
+
+
+
+    //     // //let ml handle body part mass
+    //     // int actIndex = 18;
+    //     // foreach(var item in bodyParts)
+    //     // {
+    //     //     item.Value.rb.mass = Mathf.Clamp(vectorAction[actIndex], 0.1f, 1f) * 20;
+    //     //     actIndex++;
+    //     // }
+
+
+
+    //     if (!IsDone())
+    //     {
+    //         // float headHeightReward = bodyParts[head].rb.position.y > 5? 1.0f * bodyParts[head].rb.position.y: 0;
+    //         float headHeightReward = bodyParts[head].rb.position.y/2;
+    //         float hipsHeightReward = bodyParts[hips].rb.position.y/2;
+    //         // SetReward(
+    //         AddReward(
+    //         - 0.05f * torquePenalty 
+    //         // - 0.01f * velocityPenalty
+    //         // + .5f * limbRBs[8].velocity.x
+    //         + .5f * bodyParts[hips].rb.velocity.x
+    //         // + 1.0f * bodyRB.velocity.x
+    //         // + 1.0f * bodyParts[head].rb.position.y //head height
+    //         + headHeightReward //head height
+    //         + hipsHeightReward //head height
+    //         // + 1f * bodyRB.position.y
+    //         - 0.05f * Mathf.Abs(hips.transform.position.z - hips.transform.parent.transform.position.z)
+    //         // - 0.05f * Mathf.Abs(bodyRB.velocity.y)
+    //         - 0.05f * Mathf.Abs(bodyParts[hips].rb.angularVelocity.sqrMagnitude)
+    //         );
+            
+    //     }
+    //     if (fell)
+    //     {
+    //         Done();
+    //         AddReward(-1f);
+    //     }
+    // }
 
 
 

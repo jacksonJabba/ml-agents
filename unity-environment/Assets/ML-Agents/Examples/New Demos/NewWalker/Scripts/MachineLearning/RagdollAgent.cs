@@ -41,42 +41,104 @@ public class RagdollAgent : Agent
         state.Add(obs);
     }
 
+    public Quaternion GetJointRotation(ConfigurableJoint joint)
+    {
+        return(Quaternion.FromToRotation(joint.axis, joint.connectedBody.transform.rotation.eulerAngles));
+    }
+
+    public void BodyPartObservation(LimbPiece bp)
+    {
+        var rb = bp.rigidbody;
+        Vector3 localPosrelToHips = ragdoll.pelvis.transform.InverseTransformPoint(rb.position); //chilren of the hips are affected by it's scale this is a workaround to get the local pos rel to the hips
+
+        // AddVectorObs(rb.transform.localPosition);
+        AddVectorObs(localPosrelToHips);
+        AddVectorObs(rb.position.y);
+        AddVectorObs(rb.velocity);
+        AddVectorObs(rb.angularVelocity);
+
+        if(bp.joint)
+        {
+                var jointRotation = GetJointRotation(bp.joint);
+            // if(bp.joint == joints[shinRJoint].joint)
+            // {
+            //     // float angle = Quaternion.Angle(joints[shinRJoint].joint.axis, joints[shinRJoint].joint.connectedBody.transform.rotation);
+            //     float angle = Quaternion.Angle(shinRJoint.localRotation, joints[shinRJoint].joint.connectedBody.transform.localRotation);
+            //     // float angle = Quaternion.Angle(joints[shinRJoint].rb.rotation, joints[shinRJoint].joint.connectedBody.rotation);
+            //     print("Quat Angle" + angle);
+
+            //     print("JointRotation: "  + jointRotation.eulerAngles);
+            // }
+                AddVectorObs(jointRotation); //get the joint rotation
+
+        }
+    }
+
 
     public override void CollectObservations()
     {
-        AddVectorObs(ragdoll.pelvis.Height);
+        AddVectorObs(ragdoll.pelvis.rigidbody.rotation);
+        BodyPartObservation(ragdoll.pelvis);
+        BodyPartObservation(ragdoll.head);
+        BodyPartObservation(ragdoll.upperChest);
+        BodyPartObservation(ragdoll.lowerChest);
 
-        AddVectorObs(ragdoll.pelvis.transform.up);
+        BodyPartObservation(ragdoll.leftUpperArm);
+        BodyPartObservation(ragdoll.leftLowerArm);
+        BodyPartObservation(ragdoll.leftHand);
+        BodyPartObservation(ragdoll.rightUpperArm);
+        BodyPartObservation(ragdoll.rightLowerArm);
+        BodyPartObservation(ragdoll.rightHand);
 
-        AddVectorObs(ragdoll.pelvis.transform.forward);
-
-        AddVectorObs(ragdoll.pelvis.rigidbody.velocity);
-        AddVectorObs(ragdoll.pelvis.rigidbody.angularVelocity);
-
-        AddVectorObs(ragdoll.leftHand.LocalPosInPelvis);
-        AddVectorObs(ragdoll.rightHand.LocalPosInPelvis);
-
-        AddVectorObs(ragdoll.leftHand.Velocity);
-        AddVectorObs(ragdoll.rightHand.Velocity);
-
-        AddVectorObs(ragdoll.pelvis.transform.InverseTransformVector(ragdoll.leftHand.Velocity));
-        AddVectorObs(ragdoll.pelvis.transform.InverseTransformVector(ragdoll.rightHand.Velocity));
-
-
-        AddVectorObs(ragdoll.head.Height);
-        AddVectorObs(ragdoll.head.transform.up);
-        AddVectorObs(ragdoll.head.Velocity);
-        AddVectorObs(ragdoll.head.rigidbody.angularVelocity);
-
-        AddVectorObs(ragdoll.head.RelativePosFromPelvis);
-
-        AddVectorObs(ragdoll.leftFoot.LocalPosInPelvis);
-        AddVectorObs(ragdoll.rightFoot.LocalPosInPelvis);
-
+        BodyPartObservation(ragdoll.leftUpperLeg);
+        BodyPartObservation(ragdoll.leftLowerLeg);
+        BodyPartObservation(ragdoll.leftFoot);
+        BodyPartObservation(ragdoll.rightUpperLeg);
+        BodyPartObservation(ragdoll.rightLowerLeg);
+        BodyPartObservation(ragdoll.rightFoot);
 
         AddVectorObs(ragdoll.rightFoot.touchingGround ? 1f : 0f);
         AddVectorObs(ragdoll.leftFoot.touchingGround ? 1f : 0f);
+        // AddVectorObs(ragdoll.rightHand.touchingGround ? 1f : 0f);
+        // AddVectorObs(ragdoll.leftHand.touchingGround ? 1f : 0f);
     }
+
+    // public override void CollectObservations()
+    // {
+    //     AddVectorObs(ragdoll.pelvis.Height);
+
+    //     AddVectorObs(ragdoll.pelvis.transform.up);
+
+    //     AddVectorObs(ragdoll.pelvis.transform.forward);
+
+    //     AddVectorObs(ragdoll.pelvis.rigidbody.velocity);
+    //     AddVectorObs(ragdoll.pelvis.rigidbody.angularVelocity);
+
+    //     AddVectorObs(ragdoll.leftHand.LocalPosInPelvis);
+    //     AddVectorObs(ragdoll.rightHand.LocalPosInPelvis);
+
+    //     AddVectorObs(ragdoll.leftHand.Velocity);
+    //     AddVectorObs(ragdoll.rightHand.Velocity);
+
+    //     AddVectorObs(ragdoll.pelvis.transform.InverseTransformVector(ragdoll.leftHand.Velocity));
+    //     AddVectorObs(ragdoll.pelvis.transform.InverseTransformVector(ragdoll.rightHand.Velocity));
+
+
+    //     AddVectorObs(ragdoll.head.Height);
+    //     AddVectorObs(ragdoll.head.transform.up);
+    //     AddVectorObs(ragdoll.head.Velocity);
+    //     AddVectorObs(ragdoll.head.rigidbody.angularVelocity);
+
+    //     AddVectorObs(ragdoll.head.LocalPosInPelvis);
+    //     // AddVectorObs(ragdoll.head.RelativePosFromPelvis);
+
+    //     AddVectorObs(ragdoll.leftFoot.LocalPosInPelvis);
+    //     AddVectorObs(ragdoll.rightFoot.LocalPosInPelvis);
+
+
+    //     AddVectorObs(ragdoll.rightFoot.touchingGround ? 1f : 0f);
+    //     AddVectorObs(ragdoll.leftFoot.touchingGround ? 1f : 0f);
+    // }
 
     public bool useMuscleChain;
 
@@ -129,16 +191,17 @@ public class RagdollAgent : Agent
 
 
 
+        AddReward(ragdoll.head.Height * .01f);
+        AddReward(ragdoll.head.rigidbody.velocity.sqrMagnitude * -.001f);
+            // SetReward((ragdoll.head.Height - 1.2f) + ragdoll.head.transform.up.y * 0.1f);
 
-            SetReward((ragdoll.head.Height - 1.2f) + ragdoll.head.transform.up.y * 0.1f);
-
-            if (ragdoll.upperChest.touchingGround || ragdoll.lowerChest.touchingGround || ragdoll.head.touchingGround || ragdoll.head.Height < 1.2f)
-            {
-                SetReward(-1f);
-                if (Application.isEditor)
-                    print(GetCumulativeReward());
-                Done();
-            }
+            // if (ragdoll.upperChest.touchingGround || ragdoll.lowerChest.touchingGround || ragdoll.head.touchingGround || ragdoll.head.Height < 1.2f)
+            // {
+            //     SetReward(-1f);
+            //     if (Application.isEditor)
+            //         print(GetCumulativeReward());
+            //     Done();
+            // }
 
 
 

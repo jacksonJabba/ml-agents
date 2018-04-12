@@ -99,7 +99,7 @@ public class LimbPiece : MonoBehaviour
     }
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Terrain"))
+        if (collision.gameObject.layer == LayerMask.NameToLayer("ground"))
         {
             touchingGround = true;
         }
@@ -107,7 +107,7 @@ public class LimbPiece : MonoBehaviour
 
     private void OnCollisionExit(Collision collision)
     {
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Terrain"))
+        if (collision.gameObject.layer == LayerMask.NameToLayer("ground"))
         {
             touchingGround = false;
         }
