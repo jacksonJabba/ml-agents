@@ -5,20 +5,20 @@ using UnityEngine;
 public class WalkerAgent : Agent
 {
 
-    public float strength;
-    float x_position;
-    [HideInInspector]
-    public bool[] leg_touching;
-    [HideInInspector]
+    // public float strength;
+    // float x_position;
+    // [HideInInspector]
+    // public bool[] leg_touching;
+    // [HideInInspector]
     public bool fell;
-    Vector3 past_velocity;
-    Transform body;
-    Rigidbody bodyRB;
-    public Transform[] limbs;
-    public ConfigurableJoint[] joints;
-    public Rigidbody[] limbRBs;
-    Dictionary<GameObject, Vector3> transformsPosition;
-    Dictionary<GameObject, Quaternion> transformsRotation;
+    // Vector3 past_velocity;
+    // Transform body;
+    // Rigidbody bodyRB;
+    // public Transform[] limbs;
+    // public ConfigurableJoint[] joints;
+    // public Rigidbody[] limbRBs;
+    // Dictionary<GameObject, Vector3> transformsPosition;
+    // Dictionary<GameObject, Quaternion> transformsRotation;
     public float totalCharMass; //total mass of this agent
     public bool visualizeMassDistribution;
 
@@ -52,6 +52,8 @@ public class WalkerAgent : Agent
         public Vector3 startingPos;
         public Quaternion startingRot;
         public float currentEnergyLevel;
+        public WalkerGroundContact groundContactScript;
+        // public Quaternion lastTargetJointRotation;
     }
 
     public void SetupBodyPart(Transform t)
@@ -62,6 +64,7 @@ public class WalkerAgent : Agent
         bp.startingPos = t.position;
         bp.startingRot = t.rotation;
         bodyParts.Add(t, bp);
+        bp.groundContactScript = t.GetComponent<WalkerGroundContact>();
     }
 
     public override void InitializeAgent()
@@ -93,8 +96,8 @@ public class WalkerAgent : Agent
         //     transformsPosition[child.gameObject] = child.position;
         //     transformsRotation[child.gameObject] = child.rotation;
         // }
-        leg_touching = new bool[2];
-        limbRBs = new Rigidbody[limbs.Length];
+        // leg_touching = new bool[2];
+        // limbRBs = new Rigidbody[limbs.Length];
         totalCharMass = 0; //reset to 0
         // for (int i = 0; i < limbs.Length; i++)
         // {
@@ -145,54 +148,63 @@ public class WalkerAgent : Agent
         {
             var rb = bp.rb;
             Vector3 localPosRelToHips = hips.InverseTransformPoint(rb.position); //chilren of the hips are affected by it's scale this is a workaround to get the local pos rel to the hips
-            Vector3 velocityRelToHips = hips.InverseTransformVector(rb.velocity); //
-            Vector3 angVelocityRelToHips = hips.InverseTransformVector(rb.angularVelocity); 
+            // Vector3 velocityRelToHips = hips.InverseTransformVector(rb.velocity); //
+            // Vector3 angVelocityRelToHips = hips.InverseTransformVector(rb.angularVelocity); 
 
             // AddVectorObs(rb.transform.localPosition);
             AddVectorObs(localPosRelToHips);
-            AddVectorObs(velocityRelToHips);
-            AddVectorObs(angVelocityRelToHips);
+            // AddVectorObs(rb.transform.localRotation);
+            // AddVectorObs(velocityRelToHips);
+            // AddVectorObs(angVelocityRelToHips);
             AddVectorObs(rb.position.y);
-            // AddVectorObs(rb.velocity);
-            // AddVectorObs(rb.angularVelocity);
+            AddVectorObs(rb.velocity);
+            AddVectorObs(rb.angularVelocity);
 
-            if(bp.joint)
-            {
-                var jointRotation = GetJointRotation(bp.joint);
-                AddVectorObs(jointRotation); //get the joint rotation
-            }
+            // if(bp.joint)
+            // {
+            //     // var jointRotation = GetJointRotation(bp.joint);
+            //     // AddVectorObs(jointRotation); //get the joint rotation
+            //     AddVectorObs(bp.joint.targetRotation); //get the joint rotation
+            //     // AddVectorObs(bp.lastTargetJointRotation); //get the joint rotation
+                
+            // }
         }
     public override void CollectObservations()
     {
 
-        AddVectorObs(bodyParts[hips].rb.rotation);
-        AddVectorObs(bodyParts[hips].rb.velocity);
-        AddVectorObs(bodyParts[hips].rb.angularVelocity);
+        // AddVectorObs(bodyParts[hips].rb.rotation);
+        AddVectorObs(bodyParts[hips].rb.transform.forward);
+        AddVectorObs(bodyParts[hips].rb.transform.up);
+        AddVectorObs(bodyParts[chest].rb.transform.forward);
+        AddVectorObs(bodyParts[chest].rb.transform.up);
+        // AddVectorObs(bodyParts[hips].rb.velocity);
+        // AddVectorObs(bodyParts[hips].rb.angularVelocity);
         foreach(var item in bodyParts)
         {
             BodyPartObservation(item.Value);
+            AddVectorObs(item.Value.groundContactScript.touchingGround? 1: 0); //is this bp touching the ground
         }
 
-        for (int index = 0; index < 2; index++)
-        {
-            // if (leg_touching[index])
-            // {
-            //     AddVectorObs(1);
-            // }
-            // else
-            // {
-            //     AddVectorObs(0);
-            // }
-            // if (leg_touching[index])
-            // {
-            AddVectorObs(leg_touching[index]? 1: 0);
-            // }
-            // else
-            // {
-            //     AddVectorObs(0);
-            // }
-            // leg_touching[index] = false;
-        }
+        // for (int index = 0; index < 2; index++)
+        // {
+        //     // if (leg_touching[index])
+        //     // {
+        //     //     AddVectorObs(1);
+        //     // }
+        //     // else
+        //     // {
+        //     //     AddVectorObs(0);
+        //     // }
+        //     // if (leg_touching[index])
+        //     // {
+        //     AddVectorObs(leg_touching[index]? 1: 0);
+        //     // }
+        //     // else
+        //     // {
+        //     //     AddVectorObs(0);
+        //     // }
+        //     // leg_touching[index] = false;
+        // }
     }
 
 
@@ -357,8 +369,14 @@ public class WalkerAgent : Agent
             zRot = Mathf.Lerp(-bp.joint.angularZLimit.limit, bp.joint.angularZLimit.limit, z);
         }
 
-
         bp.joint.targetRotation = Quaternion.Euler(xRot, yRot, zRot);
+        // JointDrive jd = new JointDrive();
+        // jd.mode
+
+
+
+        // bp.joint.sl
+        // bp.lastTargetJointRotation = bp.joint.targetRotation;
     }
 
 
@@ -390,8 +408,30 @@ public class WalkerAgent : Agent
        SetNormalizedTargetRotation(bodyParts[forearmR], vectorAction[21], 0, 0);
     //    SetNormalizedTargetRotation(bodyParts[handR], vectorAction[0], 0, 0);
 
-        AddReward(bodyParts[footR].rb.position.y * .01f);
-        AddReward(bodyParts[footR].rb.velocity.sqrMagnitude * -.001f);
+
+
+        float torquePenalty = 0; 
+        for (int k = 0; k < 21; k++)
+        {
+            // torquePenalty += vectorAction[k] * vectorAction[k];
+            torquePenalty +=  Mathf.Abs(vectorAction[k]);
+            // print(vectorAction[k] * vectorAction[k]);
+        }
+            // print("tp: " + 0.001f * torquePenalty);
+            // print("chest y pos: " + 0.01f * bodyParts[chest].rb.position.y);
+
+        // AddReward(
+        //     - 0.001f * torquePenalty
+        //     + 0.01f * bodyParts[chest].rb.position.y
+        // );
+
+
+        AddReward(
+            - 0.001f * torquePenalty
+            + 0.02f * Mathf.Clamp(bodyParts[hips].rb.velocity.x, 0f, 1000f)
+            + 0.01f * bodyParts[chest].rb.position.y
+        );
+        // AddReward(bodyParts[head].rb.velocity.sqrMagnitude * -.001f);
             // SetReward((ragdoll.head.Height - 1.2f) + ragdoll.head.transform.up.y * 0.1f);
 
             // if (ragdoll.upperChest.touchingGround || ragdoll.lowerChest.touchingGround || ragdoll.head.touchingGround || ragdoll.head.Height < 1.2f)
@@ -737,6 +777,7 @@ public class WalkerAgent : Agent
             item.Key.rotation = item.Value.startingRot;
             item.Value.rb.velocity = Vector3.zero;
             item.Value.rb.angularVelocity = Vector3.zero;
+            item.Value.groundContactScript.touchingGround = false;
         }
         gameObject.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
 
