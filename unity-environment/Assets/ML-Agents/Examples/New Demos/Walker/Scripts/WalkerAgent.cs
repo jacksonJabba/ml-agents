@@ -427,9 +427,10 @@ public class WalkerAgent : Agent
 
 
         AddReward(
-            - 0.001f * torquePenalty
+            // - 0.001f * torquePenalty
             + 0.02f * Mathf.Clamp(bodyParts[hips].rb.velocity.x, 0f, 1000f)
             + 0.01f * bodyParts[chest].rb.position.y
+            - 0.005f * Mathf.Abs(bodyParts[chest].rb.velocity.y)
         );
         // AddReward(bodyParts[head].rb.velocity.sqrMagnitude * -.001f);
             // SetReward((ragdoll.head.Height - 1.2f) + ragdoll.head.transform.up.y * 0.1f);
