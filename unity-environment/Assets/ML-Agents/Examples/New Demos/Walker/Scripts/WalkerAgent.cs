@@ -148,24 +148,29 @@ public class WalkerAgent : Agent
     public void BodyPartObservation(BodyPart bp)
         {
             var rb = bp.rb;
-            Vector3 localPosRelToHips = hips.InverseTransformPoint(rb.position); //chilren of the hips are affected by it's scale this is a workaround to get the local pos rel to the hips
-            Vector3 velocityRelToHips = hips.InverseTransformVector(rb.velocity); //
-            Vector3 angVelocityRelToHips = hips.InverseTransformVector(rb.angularVelocity); 
+            // Vector3 localPosRelToHips = hips.InverseTransformPoint(rb.position); //chilren of the hips are affected by it's scale this is a workaround to get the local pos rel to the hips
+            // Vector3 localPosRelToHips = hips.InverseTransformPoint(bp.joint.position); //chilren of the hips are affected by it's scale this is a workaround to get the local pos rel to the hips
+            // Vector3 velocityRelToHips = hips.InverseTransformVector(rb.velocity); //
+            // Vector3 angVelocityRelToHips = hips.InverseTransformVector(rb.angularVelocity); 
+            // Vector3 angVelocityRelToConnectedRB = bp.joint.connectedBody.transform.InverseTransformVector(rb.angularVelocity); 
 
-            // AddVectorObs(rb.transform.localPosition);
-            AddVectorObs(localPosRelToHips);
+            AddVectorObs(rb.transform.localPosition);
+            // AddVectorObs(localPosRelToHips);
             // AddVectorObs(rb.transform.localRotation);
-            AddVectorObs(velocityRelToHips);
-            AddVectorObs(angVelocityRelToHips);
+            // AddVectorObs(velocityRelToHips);
+            // AddVectorObs(angVelocityRelToHips);
             AddVectorObs(rb.position.y);
-            // AddVectorObs(rb.velocity);
+            AddVectorObs(rb.velocity);
             // AddVectorObs(rb.angularVelocity);
 
             if(bp.joint)
             {
-                // var jointRotation = GetJointRotation(bp.joint);
-                // AddVectorObs(jointRotation); //get the joint rotation
-                AddVectorObs(bp.joint.targetRotation); //get the joint rotation
+                var jointRotation = GetJointRotation(bp.joint);
+                AddVectorObs(jointRotation); //get the joint rotation
+                Vector3 angVelocityRelToConnectedRB = bp.joint.connectedBody.transform.InverseTransformVector(rb.angularVelocity); 
+                AddVectorObs(angVelocityRelToConnectedRB); //get the joint rotation
+
+                // AddVectorObs(bp.joint.targetRotation); //get the joint rotation
                 // AddVectorObs(bp.lastTargetJointRotation); //get the joint rotation
                 
             }
@@ -178,6 +183,7 @@ public class WalkerAgent : Agent
         AddVectorObs(bodyParts[hips].rb.transform.up);
         AddVectorObs(bodyParts[chest].rb.transform.forward);
         AddVectorObs(bodyParts[chest].rb.transform.up);
+        AddVectorObs(FacingTargetDirDot(Vector3.right));  //is our ragdoll facing towards our target dir. we should be able to plug in any vector here
         // AddVectorObs(bodyParts[hips].rb.velocity);
         // AddVectorObs(bodyParts[hips].rb.angularVelocity);
         foreach(var item in bodyParts)
@@ -398,6 +404,28 @@ public class WalkerAgent : Agent
         bp.joint.targetAngularVelocity = new Vector3(xVel, yVel, zVel);
     }
 
+    //the dot product of two vectors facing exactly the same dir is 1. 
+    //if two vectors are facing exactly opposite dir, the dp is -1.
+    //a dp of say .9 means two vectors are almost pointing the same way.
+    //a dp of 0 means two vectors are perpendicular (i.e. 90 degree diff)
+    //we can use DotProduct to determine if the ragdoll is facing our target dir or not
+    float FacingTargetDirDot(Vector3 targetDir)
+    {
+        // bool facingDir = false;
+        float facingDirDot;
+        // var targetDir = Vector3.right;
+        Vector3 forwardDir = bodyParts[hips].rb.transform.forward;
+        forwardDir.y = 0;
+        forwardDir.z = 0;
+        facingDirDot = Vector3.Dot(forwardDir, targetDir);
+        return facingDirDot;
+        // if(facingTowardsDot >= .9f)//roughly facing dir
+        // {
+        //     facingDir = true;
+        // }
+        // return facingDir;
+    }
+
     bool IsFacingTargetDir()
     {
         bool facingDir = false;
@@ -464,9 +492,10 @@ public class WalkerAgent : Agent
 
         AddReward(
             - 0.001f * torquePenalty
+            // - 0.005f * Mathf.Abs(bodyParts[chest].rb.velocity.y)
+            + 0.001f * FacingTargetDirDot(Vector3.right) //are we facing our target dir? this dir should change when our target dir changes. a FacingTargetDirDot of 1 means our character is facing exactly towards our target dir
             + 0.02f * Mathf.Clamp(bodyParts[hips].rb.velocity.x, 0f, 1000f)
             + 0.01f * bodyParts[chest].rb.position.y
-            - 0.005f * Mathf.Abs(bodyParts[chest].rb.velocity.y)
         );
         // AddReward(bodyParts[head].rb.velocity.sqrMagnitude * -.001f);
             // SetReward((ragdoll.head.Height - 1.2f) + ragdoll.head.transform.up.y * 0.1f);
