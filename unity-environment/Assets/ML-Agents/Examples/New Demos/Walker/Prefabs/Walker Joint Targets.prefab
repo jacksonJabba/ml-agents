@@ -324,6 +324,7 @@ GameObject:
   - component: {fileID: 23850186197420694}
   - component: {fileID: 54297107737150862}
   - component: {fileID: 153004338235592746}
+  - component: {fileID: 114967551885949242}
   m_Layer: 0
   m_Name: hand_R
   m_TagString: Untagged
@@ -462,6 +463,7 @@ GameObject:
   - component: {fileID: 23367246646046746}
   - component: {fileID: 54879578080569922}
   - component: {fileID: 153641129157411216}
+  - component: {fileID: 114586203984642380}
   m_Layer: 0
   m_Name: hand_L
   m_TagString: Untagged
@@ -2210,6 +2212,21 @@ MonoBehaviour:
   agent: {fileID: 0}
   touchingGround: 0
   penalizeOnContact: 1
+--- !u!114 &114586203984642380
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1908891019362442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33d834e5248d246138ae30cd155021d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  index: 0
+  agent: {fileID: 0}
+  touchingGround: 0
+  penalizeOnContact: 0
 --- !u!114 &114721549287667974
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -2309,6 +2326,11 @@ MonoBehaviour:
   handR: {fileID: 4901578334489758}
   disableAgentActionsForDebug: 0
   targetJointAngularVelocityScalar: 25
+  forwardDir: {x: 0, y: 0, z: 0}
+  actionClampRange: 3
+  maxBodyPartVelocity: 9
+  torquePenalty: 0
+  velocityPenalty: 0
 --- !u!114 &114866139249662708
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -2366,6 +2388,21 @@ MonoBehaviour:
   agent: {fileID: 0}
   touchingGround: 0
   penalizeOnContact: 1
+--- !u!114 &114967551885949242
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1645410070546588}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33d834e5248d246138ae30cd155021d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  index: 0
+  agent: {fileID: 0}
+  touchingGround: 0
+  penalizeOnContact: 0
 --- !u!135 &135277391624314870
 SphereCollider:
   m_ObjectHideFlags: 1

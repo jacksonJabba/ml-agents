@@ -42,6 +42,12 @@ public class WalkerAgent : Agent
     public Dictionary<Transform, BodyPart> bodyParts = new Dictionary<Transform, BodyPart>();
     public bool disableAgentActionsForDebug;
     public float targetJointAngularVelocityScalar; //a scalar for joint.targetAngularVelocity. 100?
+    public Vector3 forwardDir;
+    public float actionClampRange = 3; //clamp for our input
+    public float maxBodyPartVelocity = 3; //to help tame eratic movement
+    public float torquePenalty;
+    public float velocityPenalty;
+
     // public float agentEnergy = 100;
     // public float energyRegenerationRate;
 
@@ -394,10 +400,11 @@ public class WalkerAgent : Agent
         float xVel = 0;
         float yVel = 0;
         float zVel = 0;
+        // float clampRange = 3;
 
-            x = Mathf.Clamp(x, -1f, 1f);
-            y = Mathf.Clamp(y, -1f, 1f);
-            z = Mathf.Clamp(z, -1f, 1f);
+            x = Mathf.Clamp(x, -actionClampRange, actionClampRange);
+            y = Mathf.Clamp(y, -actionClampRange, actionClampRange);
+            z = Mathf.Clamp(z, -actionClampRange, actionClampRange);
         xVel = x * targetJointAngularVelocityScalar;
         yVel = y * targetJointAngularVelocityScalar;
         zVel = z * targetJointAngularVelocityScalar;
@@ -414,7 +421,7 @@ public class WalkerAgent : Agent
         // bool facingDir = false;
         float facingDirDot;
         // var targetDir = Vector3.right;
-        Vector3 forwardDir = bodyParts[hips].rb.transform.forward;
+        forwardDir = bodyParts[hips].rb.transform.forward;
         forwardDir.y = 0;
         forwardDir.z = 0;
         facingDirDot = Vector3.Dot(forwardDir, targetDir);
@@ -473,14 +480,23 @@ public class WalkerAgent : Agent
 
 
 
-        float torquePenalty = 0; 
+        torquePenalty = 0; 
         for (int k = 0; k < 21; k++)
         {
             // torquePenalty += vectorAction[k] * vectorAction[k];
-            torquePenalty +=  Mathf.Abs(Mathf.Clamp(vectorAction[k], -1, 1));
+            torquePenalty +=  Mathf.Abs(Mathf.Clamp(vectorAction[k], -actionClampRange, actionClampRange));
             // torquePenalty +=  Mathf.Abs(vectorAction[k]);
             // print(vectorAction[k] * vectorAction[k]);
         }
+        velocityPenalty = 0; 
+        foreach(var item in bodyParts)
+        {
+            var velSM = item.Value.rb.velocity.sqrMagnitude;
+            if(velSM > maxBodyPartVelocity * maxBodyPartVelocity)
+            {
+                velocityPenalty += velSM;
+            }
+        } 
             // print("tp: " + 0.001f * torquePenalty);
             // print("chest y pos: " + 0.01f * bodyParts[chest].rb.position.y);
 
@@ -492,7 +508,9 @@ public class WalkerAgent : Agent
 
         AddReward(
             - 0.001f * torquePenalty
+            - 0.001f * velocityPenalty
             // - 0.005f * Mathf.Abs(bodyParts[chest].rb.velocity.y)
+            
             + 0.001f * FacingTargetDirDot(Vector3.right) //are we facing our target dir? this dir should change when our target dir changes. a FacingTargetDirDot of 1 means our character is facing exactly towards our target dir
             + 0.02f * Mathf.Clamp(bodyParts[hips].rb.velocity.x, 0f, 1000f)
             + 0.01f * bodyParts[chest].rb.position.y
